@@ -71,19 +71,6 @@ class TradingSystem:
 
     def save_data(self):
         self.data.to_csv('trading-output-test.csv')
-
-    def core_logic(self, **signals_and_weights): 
-        self.data = self.data.set_index('Dates')
-        self.data = self.data[self.data.index > '2010-05-10']
-
-        # Initial signal is always true
-        self.data['Signal'] = np.ones(len(self.data))
-
-        # Update the signal based on each function
-        for signal_function, weight in signals_and_weights.items():
-            self.data['Signal'] = np.where(self.data['Signal'] & (signal_function(self.data) * weight), 1, 0)
-        
-        self.data['Position'] = self.data['Signal'].diff()       
         
 def find(name, path):
     for root, dirs, files in os.walk(path):
