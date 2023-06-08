@@ -20,31 +20,25 @@ class TradingSystem:
     def EMA(self, ndays):
         self.data["{0}EMA".format(ndays)] = self.data['Close'].ewm(span = ndays, min_periods = ndays - 1).mean()
 
-    def core_logic(self): 
+    def core_logicv1(self): 
         self.data = self.data.set_index('Dates')
         self.data = self.data[self.data.index > '2010-05-10'] 
-        self.data['Signal'] = np.where(self.data['9EMA'] > self.data['21EMA'], 1, 0)
+        std_dev = self.data['9EMA'].std()
+        self.data['Signal'] = np.where((self.data['9EMA'] > self.data['21EMA']) & (std_dev > .5) , 1, 0)
         self.data['Position'] = self.data['Signal'].diff()
-
-    def core_logic(self, signal_funcs, weights):
+     
+    def core_logic(self, **signals_and_weights): 
         self.data = self.data.set_index('Dates')
-        self.data = self.data[self.data.index > '2010-05-10'] 
+        self.data = self.data[self.data.index > '2010-05-10']
 
-        # Check that the lists of signal functions and weights have the same length
-        if len(signal_funcs) != len(weights):
-            raise ValueError("The lists of signal functions and weights must have the same length.")
+        # Initial signal is always true
+        self.data['Signal'] = np.ones(len(self.data))
 
-        # Initialize the signal column with zeros
-        self.data['Signal'] = 0.0
-
-        # Apply each signal function with its corresponding weight
-        for signal_func, weight in zip(signal_funcs, weights):
-            self.data['Signal'] += weight * signal_func(self.data)
-
-        # Generate the positions based on the signals
-        self.data['Position'] = self.data['Signal'].diff()
+        # Update the signal based on each function
+        for signal_function, weight in signals_and_weights.items():
+            self.data['Signal'] = np.where(self.data['Signal'] & (signal_function(self.data) * weight), 1, 0)
         
-        
+        self.data['Position'] = self.data['Signal'].diff() 
 
     def calculate_PnL(self):
         for i, row in self.data.iterrows():
@@ -77,6 +71,19 @@ class TradingSystem:
 
     def save_data(self):
         self.data.to_csv('trading-output-test.csv')
+
+    def core_logic(self, **signals_and_weights): 
+        self.data = self.data.set_index('Dates')
+        self.data = self.data[self.data.index > '2010-05-10']
+
+        # Initial signal is always true
+        self.data['Signal'] = np.ones(len(self.data))
+
+        # Update the signal based on each function
+        for signal_function, weight in signals_and_weights.items():
+            self.data['Signal'] = np.where(self.data['Signal'] & (signal_function(self.data) * weight), 1, 0)
+        
+        self.data['Position'] = self.data['Signal'].diff()       
         
 def find(name, path):
     for root, dirs, files in os.walk(path):
@@ -89,7 +96,7 @@ data = pd.read_excel(x)
 trading_system = TradingSystem(x)
 trading_system.EMA(9)
 trading_system.EMA(21)
-trading_system.core_logic()
+trading_system.core_logicv1()
 trading_system.calculate_PnL()
 trading_system.plot_data()
 trading_system.save_data()
