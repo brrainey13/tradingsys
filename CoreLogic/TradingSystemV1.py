@@ -27,14 +27,14 @@ class TradingSystem:
         self.data['Signal'] = np.where((self.data['9EMA'] > self.data['21EMA']) & (std_dev > .5) , 1, 0)
         self.data['Position'] = self.data['Signal'].diff()
      
-    def core_logic(self, **signals_and_weights): 
+    def core_logic(self, **signals_and_weights): #trading_system.core_logic(EMA_crossover=.7, RSI_greaterthan_2=.2, Bollinger=.1)
         self.data = self.data.set_index('Dates')
         self.data = self.data[self.data.index > '2010-05-10']
 
         # Initial signal is always true
         self.data['Signal'] = np.ones(len(self.data))
 
-        # Update the signal based on each function
+        # Update the signal based on each function | this only allows one to add extra signal functions, the weights dont matter
         for signal_function, weight in signals_and_weights.items():
             self.data['Signal'] = np.where(self.data['Signal'] & (signal_function(self.data) * weight), 1, 0)
         
@@ -83,7 +83,12 @@ data = pd.read_excel(x)
 trading_system = TradingSystem(x)
 trading_system.EMA(9)
 trading_system.EMA(21)
+
+#setup prior to core logic
 trading_system.core_logicv1()
+
 trading_system.calculate_PnL()
+
+
 trading_system.plot_data()
 trading_system.save_data()
