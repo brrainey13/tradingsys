@@ -20,11 +20,14 @@ class TradingSystem:
     def EMA(self, ndays):
         self.data["{0}EMA".format(ndays)] = self.data['Close'].ewm(span = ndays, min_periods = ndays - 1).mean()
 
-    def core_logic(self): 
+    def core_logicv1(self): 
         self.data = self.data.set_index('Dates')
         self.data = self.data[self.data.index > '2010-05-10'] 
-        self.data['Signal'] = np.where(self.data['9EMA'] > self.data['21EMA'], 1, 0)
+        std_dev = self.data['9EMA'].rolling(30).std() #we are calculating the std deviation of 
+        self.data['STD_DEV'] = std_dev
+        self.data['Signal'] = np.where((self.data['9EMA'] > self.data['21EMA']) & (std_dev > .5), 1, 0)
         self.data['Position'] = self.data['Signal'].diff()
+        return self.data
 
     def core_logic(self, signal_funcs, weights):
         self.data = self.data.set_index('Dates')
@@ -89,7 +92,7 @@ data = pd.read_excel(x)
 trading_system = TradingSystem(x)
 trading_system.EMA(9)
 trading_system.EMA(21)
-trading_system.core_logic()
+trading_system.core_logicv1()
 trading_system.calculate_PnL()
 trading_system.plot_data()
 trading_system.save_data()

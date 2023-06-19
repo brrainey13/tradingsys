@@ -23,8 +23,11 @@ class TradingSystem:
     def core_logicv1(self): 
         self.data = self.data.set_index('Dates')
         self.data = self.data[self.data.index > '2010-05-10'] 
-        self.data['Signal'] = np.where(self.data['9EMA'] > self.data['21EMA'], 1, 0)
+        std_dev = self.data['9EMA'].rolling(30).std() #we are calculating the std deviation of 
+        self.data['STD_DEV'] = std_dev
+        self.data['Signal'] = np.where((self.data['9EMA'] > self.data['21EMA']) & (std_dev > .5), 1, 0)
         self.data['Position'] = self.data['Signal'].diff()
+        return self.data
 
     def core_logic(self, signal_funcs, weights):
         self.data = self.data.set_index('Dates')
